@@ -68,10 +68,14 @@ function App() {
 
   const deleteTask = async (id) => {
     try {
-      await api.delete(`/tasks/${id}`);
+      console.log('Attempting to delete task:', id);
+      const response = await api.delete(`/tasks/${id}`);
+      console.log('Delete response:', response);
       setTasks(tasks.filter(task => task._id !== id));
+      console.log('Task removed from state');
     } catch (err) {
-      console.error('Failed to delete task');
+      console.error('Failed to delete task:', err);
+      console.error('Error response:', err.response?.data);
     }
   };
 
