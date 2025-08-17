@@ -37,6 +37,7 @@ function TaskItem({ task, onToggle, onDelete, onEdit }) {
       <div className="task-header">
         <button 
           className={`task-checkbox ${task.completed ? 'checked' : ''}`}
+          aria-label="toggle"
           onClick={() => onToggle(task._id)}
         >
           {task.completed && '✓'}
@@ -76,6 +77,7 @@ function TaskItem({ task, onToggle, onDelete, onEdit }) {
         </button>
         <button 
           className="action-btn delete"
+          aria-label="delete"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
