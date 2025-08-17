@@ -48,21 +48,28 @@ function App() {
 
   const updateTask = async (id, taskData) => {
     try {
+      console.log('Updating task:', id, taskData);
       const response = await api.put(`/tasks/${id}`, taskData);
+      console.log('Update response:', response);
       setTasks(tasks.map(task => task._id === id ? response.data : task));
       setEditingTask(null);
       return { success: true };
     } catch (err) {
+      console.error('Failed to update task:', err);
+      console.error('Error response:', err.response?.data);
       return { success: false, error: 'Failed to update task' };
     }
   };
 
   const toggleTask = async (id) => {
     try {
+      console.log('Toggling task:', id);
       const response = await api.patch('/tasks/toggle', { id });
+      console.log('Toggle response:', response);
       setTasks(tasks.map(task => task._id === id ? response.data : task));
     } catch (err) {
-      console.error('Failed to toggle task');
+      console.error('Failed to toggle task:', err);
+      console.error('Error response:', err.response?.data);
     }
   };
 
