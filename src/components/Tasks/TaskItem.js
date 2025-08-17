@@ -76,7 +76,11 @@ function TaskItem({ task, onToggle, onDelete, onEdit }) {
         </button>
         <button 
           className="action-btn delete"
-          onClick={() => setShowConfirm(true)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowConfirm(true);
+          }}
           title="Delete Quest"
         >
           🗑️
@@ -88,13 +92,23 @@ function TaskItem({ task, onToggle, onDelete, onEdit }) {
             <div className="confirm-actions">
               <button 
                 className="pixel-btn danger"
-                onClick={() => { onDelete(task._id); setShowConfirm(false); }}
+                onClick={(e) => { 
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Deleting task:', task._id);
+                  onDelete(task._id); 
+                  setShowConfirm(false); 
+                }}
               >
                 YES
               </button>
               <button 
                 className="pixel-btn"
-                onClick={() => setShowConfirm(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowConfirm(false);
+                }}
               >
                 NO
               </button>
