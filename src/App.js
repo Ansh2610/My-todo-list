@@ -55,9 +55,10 @@ function App() {
       setEditingTask(null);
       return { success: true };
     } catch (err) {
-      console.error('Failed to update task:', err);
-      console.error('Error response:', err.response?.data);
-      return { success: false, error: 'Failed to update task' };
+  console.error('Failed to update task:', err);
+  console.error('Error response:', err.response?.data);
+  const msg = err.response?.data?.error || err.response?.data?.details || 'Failed to update task';
+  return { success: false, error: msg };
     }
   };
 
@@ -68,8 +69,8 @@ function App() {
       console.log('Toggle response:', response);
       setTasks(tasks.map(task => task._id === id ? response.data : task));
     } catch (err) {
-      console.error('Failed to toggle task:', err);
-      console.error('Error response:', err.response?.data);
+  console.error('Failed to toggle task:', err);
+  console.error('Error response:', err.response?.data);
     }
   };
 
@@ -81,8 +82,8 @@ function App() {
       setTasks(tasks.filter(task => task._id !== id));
       console.log('Task removed from state');
     } catch (err) {
-      console.error('Failed to delete task:', err);
-      console.error('Error response:', err.response?.data);
+  console.error('Failed to delete task:', err);
+  console.error('Error response:', err.response?.data);
     }
   };
 

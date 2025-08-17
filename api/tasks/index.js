@@ -36,8 +36,7 @@ export default async function handler(req, res) {
       try {
   const { title, description, priority, category, dueDate } = req.body || {};
   const data = { title, description, priority, category, userId: decoded.userId };
-  // Only set dueDate if provided and non-empty to avoid cast errors
-  if (dueDate) data.dueDate = dueDate;
+  if (dueDate) data.dueDate = new Date(dueDate);
 
   const task = await Task.create(data);
         return res.status(201).json(task);

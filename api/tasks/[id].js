@@ -39,17 +39,18 @@ export default async function handler(req, res) {
     case 'PUT':
       try {
         const { title, description, priority, category, dueDate } = req.body || {};
-        const update = { title, description, priority, category, updatedAt: new Date() };
-        // Only include dueDate if provided and non-empty; if empty string, unset it
+        const $set = { title, description, priority, category, updatedAt: new Date() };
+        const updateDoc = { $set };
         if (dueDate === '') {
-          update.$unset = { dueDate: 1 };
+          updateDoc.$unset = { dueDate: 1 };
         } else if (dueDate) {
-          update.dueDate = dueDate;
+          // Cast to Date to avoid string cast issues
+          updateDoc.$set.dueDate = new Date(dueDate);
         }
 
         const task = await Task.findOneAndUpdate(
           { _id: id, userId: decoded.userId },
-          update,
+          updateDoc,
           { new: true, runValidators: true }
         );
         if (!task) {
