@@ -10,9 +10,8 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html",
-      "methods": ["GET", "HEAD"]
+  "source": "/((?!api/).*)",
+  "destination": "/index.html"
     }
   ]
 }
