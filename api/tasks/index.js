@@ -29,18 +29,20 @@ export default async function handler(req, res) {
         const tasks = await Task.find({ userId: decoded.userId }).sort({ createdAt: -1 });
         return res.status(200).json(tasks);
       } catch (error) {
-        return res.status(500).json({ error: 'Failed to fetch tasks' });
+  return res.status(500).json({ error: 'Failed to fetch tasks', details: error.message });
       }
 
     case 'POST':
       try {
-        const task = await Task.create({
-          ...req.body,
-          userId: decoded.userId
-        });
+  const { title, description, priority, category, dueDate } = req.body || {};
+  const data = { title, description, priority, category, userId: decoded.userId };
+  // Only set dueDate if provided and non-empty to avoid cast errors
+  if (dueDate) data.dueDate = dueDate;
+
+  const task = await Task.create(data);
         return res.status(201).json(task);
       } catch (error) {
-        return res.status(400).json({ error: 'Failed to create task' });
+  return res.status(400).json({ error: 'Failed to create task', details: error.message });
       }
 
     default:

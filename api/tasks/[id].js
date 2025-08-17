@@ -33,14 +33,23 @@ export default async function handler(req, res) {
         }
         return res.status(200).json(task);
       } catch (error) {
-        return res.status(500).json({ error: 'Failed to fetch task' });
+        return res.status(500).json({ error: 'Failed to fetch task', details: error.message });
       }
 
     case 'PUT':
       try {
+        const { title, description, priority, category, dueDate } = req.body || {};
+        const update = { title, description, priority, category, updatedAt: new Date() };
+        // Only include dueDate if provided and non-empty; if empty string, unset it
+        if (dueDate === '') {
+          update.$unset = { dueDate: 1 };
+        } else if (dueDate) {
+          update.dueDate = dueDate;
+        }
+
         const task = await Task.findOneAndUpdate(
           { _id: id, userId: decoded.userId },
-          { ...req.body, updatedAt: new Date() },
+          update,
           { new: true, runValidators: true }
         );
         if (!task) {
@@ -48,7 +57,7 @@ export default async function handler(req, res) {
         }
         return res.status(200).json(task);
       } catch (error) {
-        return res.status(400).json({ error: 'Failed to update task' });
+        return res.status(400).json({ error: 'Failed to update task', details: error.message });
       }
 
     case 'DELETE':
@@ -59,7 +68,7 @@ export default async function handler(req, res) {
         }
         return res.status(200).json({ message: 'Task deleted successfully' });
       } catch (error) {
-        return res.status(500).json({ error: 'Failed to delete task' });
+        return res.status(500).json({ error: 'Failed to delete task', details: error.message });
       }
 
     default:

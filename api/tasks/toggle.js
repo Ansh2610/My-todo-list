@@ -41,6 +41,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json(task);
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to toggle task' });
+    return res.status(500).json({ error: 'Failed to toggle task', details: error.message });
   }
 }
