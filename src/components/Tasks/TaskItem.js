@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './TaskList.css';
 
 function TaskItem({ task, onToggle, onDelete, onEdit }) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const getPriorityIcon = (priority) => {
     switch(priority) {
       case 'high': return '⬆️';
@@ -75,15 +76,31 @@ function TaskItem({ task, onToggle, onDelete, onEdit }) {
         </button>
         <button 
           className="action-btn delete"
-          onClick={() => {
-            if (window.confirm('DELETE THIS QUEST?')) {
-              onDelete(task._id);
-            }
-          }}
+          onClick={() => setShowConfirm(true)}
           title="Delete Quest"
         >
           🗑️
         </button>
+
+        {showConfirm && (
+          <div className="confirm-pop pixel-card" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-title">DELETE THIS QUEST?</div>
+            <div className="confirm-actions">
+              <button 
+                className="pixel-btn danger"
+                onClick={() => { onDelete(task._id); setShowConfirm(false); }}
+              >
+                YES
+              </button>
+              <button 
+                className="pixel-btn"
+                onClick={() => setShowConfirm(false)}
+              >
+                NO
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

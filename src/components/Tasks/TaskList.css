@@ -144,6 +144,31 @@
   border-color: var(--pixel-error);
 }
 
+/* Confirm pop */
+.confirm-pop {
+  position: absolute;
+  right: 8px;
+  bottom: 44px;
+  background: var(--pixel-dark);
+  border: 3px solid var(--pixel-black);
+  box-shadow: 6px 6px 0px var(--pixel-black);
+  padding: 0.75rem;
+  z-index: 10;
+  min-width: 160px;
+}
+
+.confirm-title {
+  color: var(--pixel-cream);
+  font-size: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;
