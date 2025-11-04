@@ -1,0 +1,10 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pillow==10.1.0
+pydantic==2.5.0
+python-magic-bin==0.4.14  # windows compat
+ultralytics==8.0.220  # yolov8
+opencv-python-headless==4.8.1.78
+slowapi==0.1.9  # rate limiting
+websockets==12.0
