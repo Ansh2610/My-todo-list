@@ -1,25 +1,63 @@
-# Pixel Todo App
+# VisionPulse
 
-A simple, pixel-themed todo app. Create an account, add tasks, set priorities and categories, toggle completion, edit, and delet all with a retro UI. Data is stored in MongoDB and secured with JWT-based authentication.
+AI-assisted image labeling with live inference monitoring. Upload → auto-detect → edit → export YOLO format.
 
-## Features
-- Register/login with JWT auth
-- Create, edit, delete, and toggle tasks
-- Priorities (low/medium/high) and categories
-- Optional due dates
-- Pixel-styled UI and responsive layout
+## Quick Start
 
-## Run Tests
-Use the commands below to run the test suites.
+```bash
+# local dev
+docker-compose up
 
-```powershell
-# Run all tests (UI + API)
-npm test
-
-# Frontend tests only
-npm run test:ui
-
-# Backend API tests only
-npm run test:api
+# frontend: http://localhost:5173
+# backend: http://localhost:8000
 ```
 
+## Features
+
+- YOLOv8 auto-labeling
+- Edit bounding boxes
+- YOLO format export
+- Real-time metrics (FPS, confidence, false-pos tracking)
+- WebSocket streaming
+
+## Stack
+
+- Frontend: React + Vite + TypeScript + Tailwind
+- Backend: FastAPI + YOLOv8
+- Deploy: Vercel (FE) + EC2 (BE)
+
+## Setup (Local)
+
+```bash
+# clone
+git clone https://github.com/yourname/visionpulse
+cd visionpulse
+
+# run
+docker-compose up
+```
+
+## Security
+
+- Input validation (max 10MB, MIME check)
+- Sandboxed inference (timeout)
+- Ephemeral storage (auto-cleanup)
+- Rate limiting
+- See `SECURITY.md` for details
+
+## Deploy (EC2)
+
+```bash
+# see ec2/deploy_ec2.sh
+./ec2/deploy_ec2.sh
+```
+
+## Metrics
+
+- **FPS**: Inference speed
+- **Avg Confidence**: Mean confidence across boxes
+- **False Positive Rate**: % boxes < 0.5 confidence (proxy)
+
+## License
+
+MIT
