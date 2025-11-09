@@ -1,8 +1,13 @@
 import time
+import os
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from ultralytics import YOLO
 from app.utils.metrics import calc_metrics
+
+# fix torch weights_only issue
+import torch
+torch.serialization.add_safe_globals([type(None)])
 
 router = APIRouter()
 
@@ -16,7 +21,15 @@ UPLOAD_DIR = Path(tempfile.gettempdir()) / "visionpulse_uploads"
 def get_model():
     global model
     if model is None:
-        model = YOLO("yolov8n.pt")  # smallest for speed
+        # monkey patch torch.load to use weights_only=False
+        original_load = torch.load
+        def patched_load(*args, **kwargs):
+            kwargs['weights_only'] = False
+            return original_load(*args, **kwargs)
+        torch.load = patched_load
+        
+        model = YOLO("yolov8n.pt")
+        torch.load = original_load  # restore
     return model
 
 @router.post("/infer/{session_id}")
