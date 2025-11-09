@@ -4,7 +4,9 @@ python-multipart==0.0.6
 pillow==10.1.0
 pydantic==2.5.0
 python-magic==0.4.27
-ultralytics==8.0.220  # yolov8
+torch==2.0.1
+torchvision==0.15.2
+ultralytics==8.0.220
 opencv-python-headless==4.8.1.78
-slowapi==0.1.9  # rate limiting
+slowapi==0.1.9
 websockets==12.0
