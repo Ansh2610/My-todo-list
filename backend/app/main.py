@@ -13,14 +13,17 @@ app = FastAPI(title="VisionPulse API")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS - allow local + production (Vercel will be https://*.vercel.app)
+# CORS - allow local + production
 allowed_origins = os.getenv(
     "ALLOWED_ORIGINS", 
-    "http://localhost:5173,http://localhost:80,https://visionpulse.vercel.app"
-).split(",")
+    "http://localhost:5173,http://localhost:80"
+).split(",") + [
+    "https://vison-pulse.vercel.app",
+    "https://vison-pulse-jsceu3pck-ansh-gopinaths-projects.vercel.app",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins + ["https://*.vercel.app"],  # allow all vercel preview deploys
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
