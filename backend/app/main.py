@@ -20,6 +20,7 @@ allowed_origins = os.getenv(
 ).split(",") + [
     "https://vison-pulse.vercel.app",
     "https://vison-pulse-jsceu3pck-ansh-gopinaths-projects.vercel.app",
+    "https://vison-pulse-5k3exheje-ansh-gopinaths-projects.vercel.app",
 ]
 app.add_middleware(
     CORSMiddleware,
