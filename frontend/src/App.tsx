@@ -29,9 +29,19 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">VisionPulse</h1>
-          <p className="text-sm text-gray-600 mt-1">AI-assisted image labeling</p>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">VisionPulse</h1>
+            <p className="text-sm text-gray-600 mt-1">AI-assisted image labeling</p>
+          </div>
+          <nav className="flex gap-4">
+            <button
+              onClick={() => alert('Custom Annotator - Coming Soon! 🚀\n\nFeatures:\n• Manual bounding box drawing\n• Custom label creation\n• Video annotation support\n• Multi-class labeling')}
+              className="px-4 py-2 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition"
+            >
+              Custom Annotator (Beta)
+            </button>
+          </nav>
         </div>
       </header>
 
