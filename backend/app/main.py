@@ -18,9 +18,7 @@ allowed_origins = os.getenv(
     "ALLOWED_ORIGINS", 
     "http://localhost:5173,http://localhost:80"
 ).split(",") + [
-    "https://vison-pulse.vercel.app",
-    "https://vison-pulse-jsceu3pck-ansh-gopinaths-projects.vercel.app",
-    "https://vison-pulse-5k3exheje-ansh-gopinaths-projects.vercel.app",
+    "https://vision-pulse-ag.vercel.app",
 ]
 app.add_middleware(
     CORSMiddleware,
