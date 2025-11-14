@@ -56,8 +56,12 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
             if request.url.path == "/health":
                 return await call_next(request)
             
+            # Skip CSRF for API endpoints (stateless, no cookies)
+            # CSRF protection is only needed for session-based auth
+            if request.url.path.startswith("/api/"):
+                return await call_next(request)
+            
             # Skip CSRF in local development (localhost only)
-            # TODO: Remove this in production!
             if "localhost" in request.url.netloc or "127.0.0.1" in request.url.netloc:
                 return await call_next(request)
             
