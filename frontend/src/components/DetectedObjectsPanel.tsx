@@ -1,5 +1,6 @@
 import { Box } from '../types'
 import { useState, useEffect, useRef } from 'react'
+import { Check, X, Trash2 } from 'lucide-react'
 
 interface Props {
   boxes: Box[]
@@ -64,7 +65,7 @@ export default function DetectedObjectsPanel({
   return (
     <div className="bg-white border-t-2 border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">
-        ✓ Detected Objects ({boxes.length})
+        Detected Objects ({boxes.length})
       </h3>
       
       {boxes.length === 0 ? (
@@ -117,36 +118,36 @@ export default function DetectedObjectsPanel({
                         e.stopPropagation()
                         onVerifyBox(idx, true)
                       }}
-                      className={`flex-1 px-2 py-1 rounded text-xs font-semibold transition ${
+                      className={`flex-1 px-2 py-1 rounded text-xs font-semibold transition flex items-center justify-center ${
                         box.is_verified && box.is_correct
                           ? 'bg-green-500 text-white'
                           : 'bg-green-100 text-green-700 hover:bg-green-200'
                       }`}
                     >
-                      ✓
+                      <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         onVerifyBox(idx, false)
                       }}
-                      className={`flex-1 px-2 py-1 rounded text-xs font-semibold transition ${
+                      className={`flex-1 px-2 py-1 rounded text-xs font-semibold transition flex items-center justify-center ${
                         box.is_verified && !box.is_correct
                           ? 'bg-red-500 text-white'
                           : 'bg-red-100 text-red-700 hover:bg-red-200'
                       }`}
                     >
-                      ✗
+                      <X className="w-3 h-3" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         onDeleteBox(idx)
                       }}
-                      className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+                      className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 flex items-center justify-center"
                       title="Delete"
                     >
-                      🗑️
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 )}
@@ -157,9 +158,10 @@ export default function DetectedObjectsPanel({
                       e.stopPropagation()
                       onDeleteBox(idx)
                     }}
-                    className="w-full px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+                    className="w-full px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 flex items-center justify-center gap-1"
                   >
-                    🗑️ Delete
+                    <Trash2 className="w-3 h-3" />
+                    <span>Delete</span>
                   </button>
                 )}
               </div>

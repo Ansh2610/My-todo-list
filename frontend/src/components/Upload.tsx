@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api.ts'
 import { Box, Metrics } from '../types.ts'
+import { Info } from 'lucide-react'
 
 interface Props {
   onComplete: (sessionId: string, imageSrc: string, boxes: Box[], metrics: Metrics, imageId: string, filename?: string) => void
@@ -90,8 +91,9 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
           </h2>
           
           {existingSessionId && (
-            <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm">
-              📊 Continuing session - metrics will accumulate across images
+            <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm flex items-start gap-2">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>Continuing session - metrics will accumulate across images</span>
             </div>
           )}
         </>
@@ -101,7 +103,7 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
         <div className="mb-4">
           {!compact && (
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose image(s) (max 10 files, 10MB each)
+              Choose image(s)
             </label>
           )}
           <input
@@ -152,7 +154,7 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
         <button
           type="submit"
           disabled={(!file && files.length === 0) || loading}
-          className={`w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400 ${compact ? 'text-sm' : ''}`}
+          className={`w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition font-medium ${compact ? 'text-sm' : 'text-base'}`}
         >
           {loading 
             ? (uploadProgress 
@@ -164,15 +166,6 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
           }
         </button>
       </form>
-
-      {!compact && (
-        <div className="mt-6 text-xs text-gray-500">
-          <p>• Supports JPEG, PNG, WebP</p>
-          <p>• Upload up to 10 images at once</p>
-          <p>• Auto-detects objects with YOLOv8</p>
-          <p>• Edit boxes before export</p>
-        </div>
-      )}
     </div>
   )
 }

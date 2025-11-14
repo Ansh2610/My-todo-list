@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { Home, FileImage, BarChart3, Image as ImageIcon, PenTool } from 'lucide-react'
+import LandingPage from './components/LandingPage.tsx'
 import Upload from './components/Upload.tsx'
 import Canvas from './components/Canvas.tsx'
 import Gallery from './components/Gallery.tsx'
@@ -285,20 +287,23 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Header */}
-      <header className="bg-white shadow-md z-10">
-        <div className="px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">VisionPulse</h1>
-            <p className="text-sm text-gray-500">AI-assisted image labeling</p>
+      <header className="bg-white shadow-sm z-10">
+        <div className="px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-3.5 h-3.5 border-2 border-white rounded"></div>
+            </div>
+            <h1 className="text-lg font-bold text-gray-900">VisionPulse</h1>
           </div>
-          <nav className="flex gap-3">
+          {imageSrc && (
             <button
               onClick={handleReset}
-              className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center gap-2 text-sm"
             >
-              🏠 Home
+              <Home className="w-4 h-4" />
+              <span>Home</span>
             </button>
-          </nav>
+          )}
         </div>
       </header>
 
@@ -309,42 +314,42 @@ function App() {
             <nav className="flex-1 p-4 space-y-2">
               <button
                 onClick={() => setActiveTab('editor')}
-                className={`w-full px-4 py-3 rounded text-left font-medium transition ${
+                className={`w-full px-4 py-3 rounded-lg text-left font-medium transition flex items-center gap-3 ${
                   activeTab === 'editor' 
                     ? 'bg-blue-600 text-white' 
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
-                📝 Editor
+                <PenTool className="w-4 h-4" />
+                <span>Editor</span>
               </button>
               <button
                 onClick={() => {
                   setActiveTab('metrics')
                   setMetricsRefreshTrigger(prev => prev + 1)
                 }}
-                className={`w-full px-4 py-3 rounded text-left font-medium transition ${
+                className={`w-full px-4 py-3 rounded-lg text-left font-medium transition flex items-center gap-3 ${
                   activeTab === 'metrics' 
                     ? 'bg-blue-600 text-white' 
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
-                📊 Metrics
+                <BarChart3 className="w-4 h-4" />
+                <span>Metrics</span>
               </button>
               <button
                 onClick={() => setActiveTab('gallery')}
-                className={`w-full px-4 py-3 rounded text-left font-medium transition ${
+                className={`w-full px-4 py-3 rounded-lg text-left font-medium transition flex items-center gap-3 ${
                   activeTab === 'gallery' 
                     ? 'bg-blue-600 text-white' 
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
-                🖼️ Gallery ({imageHistory.length})
-              </button>
-              <button
-                onClick={() => alert('Video Annotation - Coming Soon! 🚀\n\nFeatures:\n• Frame-by-frame annotation\n• Temporal tracking\n• Auto-propagation')}
-                className="w-full px-4 py-3 rounded text-left font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition"
-              >
-                🎬 Beta
+                <FileImage className="w-4 h-4" />
+                <span>Gallery</span>
+                <span className="ml-auto text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+                  {imageHistory.length}
+                </span>
               </button>
             </nav>
             
@@ -359,9 +364,7 @@ function App() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           {!imageSrc ? (
-            <div className="h-full flex items-center justify-center p-8">
-              <Upload onComplete={handleUploadComplete} existingSessionId={sessionId} />
-            </div>
+            <LandingPage onComplete={handleUploadComplete} />
           ) : (
             <div className="h-full flex flex-col">
               {/* Center Content Area */}
@@ -443,7 +446,10 @@ function App() {
                   <div className="p-6 space-y-6">
                     {/* Upload Button */}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-800 mb-3">📁 Add Images</h3>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        Add Images
+                      </h3>
                       <Upload 
                         onComplete={handleUploadComplete} 
                         existingSessionId={sessionId}
@@ -453,16 +459,19 @@ function App() {
 
                     {/* Drawing Mode Toggle */}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-800 mb-3">✏️ Annotate</h3>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <PenTool className="w-4 h-4" />
+                        Annotate
+                      </h3>
                       <button
                         onClick={() => setDrawingMode(!drawingMode)}
-                        className={`w-full px-4 py-2 rounded font-medium transition ${
+                        className={`w-full px-4 py-2 rounded-lg font-medium transition ${
                           drawingMode
                             ? 'bg-blue-600 text-white hover:bg-blue-700'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        {drawingMode ? '✏️ Drawing ON' : '➕ Draw Box'}
+                        {drawingMode ? 'Drawing Mode ON' : 'Draw Box'}
                       </button>
                       {drawingMode && (
                         <p className="mt-2 text-xs text-gray-600">
@@ -474,8 +483,8 @@ function App() {
                     {/* Selected Box Info */}
                     {selectedBoxIndex !== null && (
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-800 mb-3">📌 Selected</h3>
-                        <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                        <h3 className="text-sm font-semibold text-gray-800 mb-3">Selected</h3>
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                           <div className="font-medium text-sm">{boxes[selectedBoxIndex].label}</div>
                           <div className="text-xs text-gray-600 mt-1">
                             {(boxes[selectedBoxIndex].confidence * 100).toFixed(1)}%
@@ -485,7 +494,7 @@ function App() {
                             onClick={() => handleDeleteBox(selectedBoxIndex)}
                             className="mt-2 w-full px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
                           >
-                            🗑️ Delete Selected
+                            Delete Selected
                           </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-2 text-center">
@@ -498,9 +507,9 @@ function App() {
                     <div className="space-y-2">
                       <button
                         onClick={() => alert('Export functionality - Coming soon!')}
-                        className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
                       >
-                        💾 Export YOLO
+                        Export YOLO
                       </button>
                     </div>
                   </div>

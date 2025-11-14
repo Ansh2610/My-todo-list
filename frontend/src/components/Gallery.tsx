@@ -1,4 +1,5 @@
 import { Box } from '../types.ts'
+import { ImageIcon, Trash2, Info } from 'lucide-react'
 
 interface ImageHistory {
   id: string
@@ -26,7 +27,9 @@ export default function Gallery({ images, onSelectImage, onDeleteImage, currentI
   if (images.length === 0) {
     return (
       <div className="bg-white p-8 rounded-lg shadow text-center">
-        <div className="text-gray-400 text-6xl mb-4">🖼️</div>
+        <div className="flex justify-center mb-4">
+          <ImageIcon className="w-16 h-16 text-gray-400" />
+        </div>
         <h2 className="text-xl font-semibold text-gray-700 mb-2">No Images Yet</h2>
         <p className="text-gray-500">Upload images to see them here</p>
       </div>
@@ -88,10 +91,10 @@ export default function Gallery({ images, onSelectImage, onDeleteImage, currentI
             {onDeleteImage && (
               <button
                 onClick={(e) => handleDelete(e, index)}
-                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                 title="Delete image"
               >
-                🗑️
+                <Trash2 className="w-4 h-4" />
               </button>
             )}
 
@@ -103,7 +106,7 @@ export default function Gallery({ images, onSelectImage, onDeleteImage, currentI
             {/* Box count badge */}
             {item.boxes.length > 0 && (
               <div className="absolute bottom-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-                {item.boxes.length} 📦
+                {item.boxes.length} boxes
               </div>
             )}
           </div>
@@ -131,8 +134,11 @@ export default function Gallery({ images, onSelectImage, onDeleteImage, currentI
       </div>
 
       {/* Instructions */}
-      <div className="mt-4 p-4 bg-blue-50 text-blue-700 rounded-lg text-sm">
-        💡 <strong>Tip:</strong> Click any image to load it in the editor and make changes to annotations
+      <div className="mt-4 p-4 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-start gap-3">
+        <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <p>
+          <strong>Tip:</strong> Click any image to load it in the editor and make changes to annotations
+        </p>
       </div>
     </div>
   )

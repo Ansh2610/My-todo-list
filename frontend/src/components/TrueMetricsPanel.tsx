@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { TrueMetrics } from '../types'
+import { Info } from 'lucide-react'
 
 interface Props {
   sessionId: string
@@ -69,13 +70,18 @@ export default function TrueMetricsPanel({ sessionId, refreshTrigger }: Props) {
   if (verifiedCount === 0) {
     return (
       <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2 text-blue-900">Classification Metrics</h3>
-        <p className="text-sm text-blue-700">
-          Mark boxes as correct (✓) or incorrect (✗) to see true classification metrics.
-        </p>
-        <p className="text-xs text-blue-600 mt-2">
-          Session: {sessionInfo} • 0 verified
-        </p>
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="text-lg font-semibold mb-2 text-blue-900">Classification Metrics</h3>
+            <p className="text-sm text-blue-700">
+              Mark boxes as correct or incorrect to see true classification metrics.
+            </p>
+            <p className="text-xs text-blue-600 mt-2">
+              Session: {sessionInfo} • 0 verified
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -174,8 +180,9 @@ export default function TrueMetricsPanel({ sessionId, refreshTrigger }: Props) {
       {/* Session Info */}
       {sessionStats && sessionStats.totalImages > 1 && (
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">
-            📊 Session Overview
+          <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            Session Overview
           </h4>
           <div className="text-xs text-blue-700 space-y-1">
             <p>
@@ -188,7 +195,7 @@ export default function TrueMetricsPanel({ sessionId, refreshTrigger }: Props) {
               <strong>Verified:</strong> {sessionStats.verifiedCount} of {sessionStats.totalBoxes} boxes ({((sessionStats.verifiedCount / sessionStats.totalBoxes) * 100).toFixed(1)}%)
             </p>
             <p className="mt-2 pt-2 border-t border-blue-300 text-blue-600">
-              💡 Metrics above are aggregated across <strong>all {sessionStats.totalImages} images</strong> in this session
+              Metrics above are aggregated across <strong>all {sessionStats.totalImages} images</strong> in this session
             </p>
           </div>
         </div>
