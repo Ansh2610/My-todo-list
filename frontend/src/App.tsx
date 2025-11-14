@@ -1,21 +1,93 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Upload from './components/Upload.tsx'
 import Canvas from './components/Canvas.tsx'
-import Dashboard from './components/Dashboard.tsx'
+import Gallery from './components/Gallery.tsx'
+import TrueMetricsPanel from './components/TrueMetricsPanel.tsx'
+import DetectedObjectsPanel from './components/DetectedObjectsPanel.tsx'
+import { api } from './api.ts'
 import { Box, Metrics } from './types.ts'
+
+interface ImageHistory {
+  id: string
+  imageSrc: string
+  boxes: Box[]
+  timestamp: Date
+  filename: string
+  selectedBoxIndex?: number | null  // Remember which box was selected for this image
+}
 
 function App() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [boxes, setBoxes] = useState<Box[]>([])
-  const [metrics, setMetrics] = useState<Metrics | null>(null)
-  const [activeTab, setActiveTab] = useState<'editor' | 'metrics'>('editor')
+  const [_metrics, setMetrics] = useState<Metrics | null>(null) // YOLO metrics (kept for potential future use)
+  const [activeTab, setActiveTab] = useState<'editor' | 'metrics' | 'gallery'>('editor')
+  const [imageCount, setImageCount] = useState(0)
+  const [imageHistory, setImageHistory] = useState<ImageHistory[]>([])
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number | null>(null)
+  const [currentImageId, setCurrentImageId] = useState<string>('') // Track current image ID for Canvas key
+  const [metricsRefreshTrigger, setMetricsRefreshTrigger] = useState(0) // Increment to trigger metrics refresh
+  const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null)
+  const [drawingMode, setDrawingMode] = useState(false)
 
-  const handleUploadComplete = (session: string, src: string, detectedBoxes: Box[], m: Metrics) => {
+  // Save selection state to image history whenever it changes
+  useEffect(() => {
+    if (currentHistoryIndex !== null) {
+      setImageHistory((prev) => {
+        const updated = [...prev]
+        if (updated[currentHistoryIndex]) {
+          updated[currentHistoryIndex] = {
+            ...updated[currentHistoryIndex],
+            selectedBoxIndex: selectedBoxIndex
+          }
+        }
+        return updated
+      })
+    } else if (imageHistory.length > 0) {
+      // Save to the most recent image
+      setImageHistory((prev) => {
+        const updated = [...prev]
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          selectedBoxIndex: selectedBoxIndex
+        }
+        return updated
+      })
+    }
+  }, [selectedBoxIndex, currentHistoryIndex])
+
+  // Add keyboard shortcut: Escape to deselect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedBoxIndex !== null) {
+        setSelectedBoxIndex(null)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedBoxIndex])
+
+  const handleUploadComplete = (session: string, src: string, detectedBoxes: Box[], m: Metrics, imageId: string, filename?: string) => {
+    console.log('[UPLOAD COMPLETE] Session:', session, 'Image ID:', imageId, 'Boxes:', detectedBoxes.length)
     setSessionId(session)
     setImageSrc(src)
     setBoxes(detectedBoxes)
     setMetrics(m)
+    setImageCount((prev) => prev + 1)
+    setActiveTab('editor') // Switch to editor tab to see new image
+    
+    // Add to history - use backend's image_id instead of generating our own
+    const newHistoryItem: ImageHistory = {
+      id: imageId, // Use backend's image_id for consistency
+      imageSrc: src,
+      boxes: detectedBoxes,
+      timestamp: new Date(),
+      filename: filename || 'image.jpg'
+    }
+    setImageHistory((prev) => [...prev, newHistoryItem])
+    setCurrentHistoryIndex(null) // Reset to show latest
+    setCurrentImageId(imageId) // Set current image ID from backend
   }
 
   const handleReset = () => {
@@ -24,65 +96,421 @@ function App() {
     setBoxes([])
     setMetrics(null)
     setActiveTab('editor')
+    setImageCount(0)
+    setImageHistory([])
+    setCurrentHistoryIndex(null)
+  }
+
+  const handleSelectHistoryImage = async (index: number) => {
+    const historyItem = imageHistory[index]
+    setImageSrc(historyItem.imageSrc)
+    setCurrentHistoryIndex(index)
+    setCurrentImageId(historyItem.id)
+    setActiveTab('editor')
+    
+    // Restore the selection for this image
+    setSelectedBoxIndex(historyItem.selectedBoxIndex ?? null)
+    
+    console.log('[SELECT IMAGE] Selected image index:', index, 'ID:', historyItem.id)
+    console.log('[SELECT IMAGE] Restoring selection:', historyItem.selectedBoxIndex ?? 'none')
+    
+    // Fetch latest box states from backend to get current verification status
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const res = await fetch(`${API_URL}/api/validations/${sessionId}`)
+      if (res.ok) {
+        const data = await res.json()
+        console.log('[SELECT IMAGE] Backend returned', data.images?.length, 'images')
+        
+        // Find the boxes for this specific image using image_id
+        const imageId = historyItem.id
+        console.log('[SELECT IMAGE] Looking for image_id:', imageId)
+        
+        // Debug: Log all image IDs from backend
+        data.images?.forEach((img: any, idx: number) => {
+          console.log(`[SELECT IMAGE] Backend image ${idx}: ${img.image_id}, boxes: ${img.boxes?.length}`)
+        })
+        
+        const imageData = data.images?.find((img: any) => img.image_id === imageId)
+        if (imageData && imageData.boxes) {
+          console.log('[SELECT IMAGE] FOUND matching image with', imageData.boxes.length, 'boxes')
+          // Use fresh boxes from backend with current verification status
+          setBoxes(imageData.boxes)
+          // Also update imageHistory with fresh boxes
+          setImageHistory((prev) => {
+            const updated = [...prev]
+            updated[index] = {
+              ...updated[index],
+              boxes: imageData.boxes
+            }
+            return updated
+          })
+        } else {
+          console.warn('[SELECT IMAGE] NOT FOUND - using fallback local boxes')
+          // Fallback to local boxes if not found
+          setBoxes(historyItem.boxes)
+        }
+      } else {
+        console.error('[SELECT IMAGE] Backend error:', res.status)
+        // Fallback to local boxes on error
+        setBoxes(historyItem.boxes)
+      }
+    } catch (err) {
+      console.error('Failed to fetch latest box states:', err)
+      // Fallback to local boxes
+      setBoxes(historyItem.boxes)
+    }
+  }
+
+  const handleDeleteImage = (index: number) => {
+    // Determine which image to show after deletion
+    const newHistory = imageHistory.filter((_, i) => i !== index)
+    
+    // If deleting current image, switch to previous or next available
+    if (currentHistoryIndex === index) {
+      if (newHistory.length === 0) {
+        // No images left - clear view
+        setImageSrc(null)
+        setBoxes([])
+        setCurrentHistoryIndex(null)
+      } else {
+        // Switch to previous image, or first if deleting index 0
+        const newIndex = index > 0 ? index - 1 : 0
+        const targetImage = newHistory[newIndex]
+        
+        // Load the target image
+        setImageSrc(targetImage.imageSrc)
+        setBoxes(targetImage.boxes)
+        setCurrentImageId(targetImage.id)
+        setCurrentHistoryIndex(newIndex)
+      }
+    } else if (currentHistoryIndex !== null && currentHistoryIndex > index) {
+      // Adjust current index if we deleted an earlier image
+      setCurrentHistoryIndex(currentHistoryIndex - 1)
+    }
+    
+    // Update history
+    setImageHistory(newHistory)
+  }
+
+  const handleUpdateCurrentBoxes = (updatedBoxes: Box[]) => {
+    // Update boxes in current view
+    setBoxes(updatedBoxes)
+    
+    // Trigger metrics refresh when boxes are updated (verified/unverified)
+    setMetricsRefreshTrigger(prev => prev + 1)
+    
+    // If viewing a history item, update it in history
+    if (currentHistoryIndex !== null) {
+      setImageHistory((prev) => {
+        const updated = [...prev]
+        updated[currentHistoryIndex] = {
+          ...updated[currentHistoryIndex],
+          boxes: updatedBoxes
+        }
+        return updated
+      })
+    } else {
+      // Update the most recent item in history
+      setImageHistory((prev) => {
+        if (prev.length === 0) return prev
+        const updated = [...prev]
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          boxes: updatedBoxes
+        }
+        return updated
+      })
+    }
+  }
+
+  const handleVerifyBox = async (idx: number, isCorrect: boolean) => {
+    try {
+      const box = boxes[idx]
+      const box_id = box.box_id || `fallback_${idx}`
+      
+      // Call validation API
+      await api.validate(sessionId!, [
+        {
+          box_id: box_id,
+          is_correct: isCorrect,
+        },
+      ])
+
+      // Update local state
+      const updatedBoxes = [...boxes]
+      updatedBoxes[idx] = {
+        ...updatedBoxes[idx],
+        is_verified: true,
+        is_correct: isCorrect,
+      }
+      handleUpdateCurrentBoxes(updatedBoxes)
+    } catch (err) {
+      console.error('Verification failed:', err)
+      alert('Failed to verify box. Please try again.')
+    }
+  }
+
+  const handleDeleteBox = async (idx: number) => {
+    if (!confirm('Delete this annotation?')) {
+      return
+    }
+
+    try {
+      const boxToDelete = boxes[idx]
+      
+      // Validate required data
+      if (!boxToDelete.box_id) {
+        console.error('[DELETE BOX] Box has no box_id')
+        alert('Cannot delete box: missing ID')
+        return
+      }
+      
+      // Call backend to delete the box
+      await api.deleteBox(sessionId!, currentImageId!, boxToDelete.box_id)
+      
+      // Update local state
+      const updatedBoxes = boxes.filter((_, i) => i !== idx)
+      setBoxes(updatedBoxes)
+      handleUpdateCurrentBoxes(updatedBoxes)
+      setSelectedBoxIndex(null)
+      
+      console.log('[DELETE BOX] Successfully deleted box:', boxToDelete.box_id)
+    } catch (err) {
+      console.error('Delete box failed:', err)
+      alert('Failed to delete box. Please try again.')
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">VisionPulse</h1>
-            <p className="text-sm text-gray-600 mt-1">AI-assisted image labeling</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top Header */}
+      <header className="bg-white shadow-md z-10">
+        <div className="px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-gray-900">VisionPulse</h1>
+            <p className="text-sm text-gray-500">AI-assisted image labeling</p>
           </div>
-          <nav className="flex gap-4">
+          <nav className="flex gap-3">
             <button
-              onClick={() => alert('Custom Annotator - Coming Soon! 🚀\n\nFeatures:\n• Manual bounding box drawing\n• Custom label creation\n• Video annotation support\n• Multi-class labeling')}
-              className="px-4 py-2 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition"
+              onClick={handleReset}
+              className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition"
             >
-              Custom Annotator (Beta)
+              🏠 Home
             </button>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {!sessionId ? (
-          <Upload onComplete={handleUploadComplete} />
-        ) : (
-          <div>
-            <div className="mb-4 flex gap-4">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar Navigation */}
+        {imageSrc && (
+          <aside className="w-48 bg-white shadow-lg flex flex-col">
+            <nav className="flex-1 p-4 space-y-2">
               <button
                 onClick={() => setActiveTab('editor')}
-                className={`px-4 py-2 rounded ${activeTab === 'editor' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                className={`w-full px-4 py-3 rounded text-left font-medium transition ${
+                  activeTab === 'editor' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
               >
-                Editor
+                📝 Editor
               </button>
               <button
-                onClick={() => setActiveTab('metrics')}
-                className={`px-4 py-2 rounded ${activeTab === 'metrics' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => {
+                  setActiveTab('metrics')
+                  setMetricsRefreshTrigger(prev => prev + 1)
+                }}
+                className={`w-full px-4 py-3 rounded text-left font-medium transition ${
+                  activeTab === 'metrics' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
               >
-                Metrics
+                📊 Metrics
               </button>
               <button
-                onClick={handleReset}
-                className="px-4 py-2 rounded bg-red-500 text-white ml-auto"
+                onClick={() => setActiveTab('gallery')}
+                className={`w-full px-4 py-3 rounded text-left font-medium transition ${
+                  activeTab === 'gallery' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
               >
-                Reset
+                🖼️ Gallery ({imageHistory.length})
               </button>
+              <button
+                onClick={() => alert('Video Annotation - Coming Soon! 🚀\n\nFeatures:\n• Frame-by-frame annotation\n• Temporal tracking\n• Auto-propagation')}
+                className="w-full px-4 py-3 rounded text-left font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition"
+              >
+                🎬 Beta
+              </button>
+            </nav>
+            
+            <div className="p-4 border-t border-gray-200">
+              <div className="text-xs text-gray-500 text-center">
+                {imageCount} image{imageCount !== 1 ? 's' : ''} processed
+              </div>
             </div>
+          </aside>
+        )}
 
-            {activeTab === 'editor' ? (
-              <Canvas
-                sessionId={sessionId}
-                imageSrc={imageSrc!}
-                initialBoxes={boxes}
-              />
-            ) : (
-              <Dashboard sessionId={sessionId} initialMetrics={metrics} />
-            )}
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto">
+          {!imageSrc ? (
+            <div className="h-full flex items-center justify-center p-8">
+              <Upload onComplete={handleUploadComplete} existingSessionId={sessionId} />
+            </div>
+          ) : (
+            <div className="h-full flex flex-col">
+              {/* Center Content Area */}
+              <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex flex-col">
+                  {activeTab === 'editor' ? (
+                    <>
+                      {/* Image Navigation */}
+                      {imageHistory.length > 1 && (
+                        <div className="flex justify-between items-center px-6 py-3 bg-white border-b">
+                          <button
+                            onClick={() => {
+                              const prevIndex = currentHistoryIndex === null 
+                                ? imageHistory.length - 2 
+                                : Math.max(0, currentHistoryIndex - 1)
+                              handleSelectHistoryImage(prevIndex)
+                            }}
+                            disabled={currentHistoryIndex === 0}
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                          >
+                            ← Previous
+                          </button>
+                          <span className="text-sm font-medium text-gray-700">
+                            Image {(currentHistoryIndex ?? imageHistory.length - 1) + 1} of {imageHistory.length}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const nextIndex = currentHistoryIndex === null 
+                                ? imageHistory.length - 1 
+                                : Math.min(imageHistory.length - 1, currentHistoryIndex + 1)
+                              handleSelectHistoryImage(nextIndex)
+                            }}
+                            disabled={currentHistoryIndex === imageHistory.length - 1 || (currentHistoryIndex === null && imageHistory.length === 1)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Canvas */}
+                      <Canvas
+                        key={currentImageId}
+                        sessionId={sessionId!}
+                        imageId={currentImageId!}
+                        imageSrc={imageSrc!}
+                        initialBoxes={boxes}
+                        onBoxesUpdate={handleUpdateCurrentBoxes}
+                        onBoxSelect={setSelectedBoxIndex}
+                        selectedBoxIndex={selectedBoxIndex}
+                        drawingMode={drawingMode}
+                      />
+
+                      {/* Detected Objects Panel */}
+                      <DetectedObjectsPanel
+                        boxes={boxes}
+                        imageSrc={imageSrc!}
+                        selectedBoxIndex={selectedBoxIndex}
+                        onSelectBox={setSelectedBoxIndex}
+                        onVerifyBox={handleVerifyBox}
+                        onDeleteBox={handleDeleteBox}
+                      />
+                    </>
+                  ) : activeTab === 'gallery' ? (
+                  <Gallery
+                    images={imageHistory}
+                    onSelectImage={handleSelectHistoryImage}
+                    onDeleteImage={handleDeleteImage}
+                    currentIndex={currentHistoryIndex}
+                  />
+                ) : (
+                  <TrueMetricsPanel sessionId={sessionId!} refreshTrigger={metricsRefreshTrigger} />
+                )}
+              </div> {/* close flex-1 flex flex-col for content area */}
+
+              {/* Right Sidebar - Actions */}
+              {activeTab === 'editor' && (
+                <aside className="w-64 bg-white shadow-lg border-l border-gray-200">
+                  <div className="p-6 space-y-6">
+                    {/* Upload Button */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-3">📁 Add Images</h3>
+                      <Upload 
+                        onComplete={handleUploadComplete} 
+                        existingSessionId={sessionId}
+                        compact={true}
+                      />
+                    </div>
+
+                    {/* Drawing Mode Toggle */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-3">✏️ Annotate</h3>
+                      <button
+                        onClick={() => setDrawingMode(!drawingMode)}
+                        className={`w-full px-4 py-2 rounded font-medium transition ${
+                          drawingMode
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {drawingMode ? '✏️ Drawing ON' : '➕ Draw Box'}
+                      </button>
+                      {drawingMode && (
+                        <p className="mt-2 text-xs text-gray-600">
+                          Click and drag on the image to draw a bounding box. You'll be prompted to name it.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Selected Box Info */}
+                    {selectedBoxIndex !== null && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-800 mb-3">📌 Selected</h3>
+                        <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                          <div className="font-medium text-sm">{boxes[selectedBoxIndex].label}</div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {(boxes[selectedBoxIndex].confidence * 100).toFixed(1)}%
+                            {boxes[selectedBoxIndex].is_manual && ' (Manual)'}
+                          </div>
+                          <button
+                            onClick={() => handleDeleteBox(selectedBoxIndex)}
+                            className="mt-2 w-full px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                          >
+                            🗑️ Delete Selected
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                          Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-xs font-mono">ESC</kbd> to deselect
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => alert('Export functionality - Coming soon!')}
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
+                      >
+                        💾 Export YOLO
+                      </button>
+                    </div>
+                  </div>
+                </aside>
+              )}
+            </div>
           </div>
         )}
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

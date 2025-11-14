@@ -6,6 +6,10 @@ export interface Box {
   confidence: number
   label: string
   class_id: number
+  box_id?: string
+  is_verified?: boolean
+  is_correct?: boolean
+  is_manual?: boolean
 }
 
 export interface Metrics {
@@ -13,6 +17,16 @@ export interface Metrics {
   avg_confidence: number
   false_positive_rate: number
   box_count: number
+}
+
+export interface TrueMetrics {
+  precision: number
+  recall: number
+  f1_score: number
+  true_positives: number
+  false_positives: number
+  false_negatives: number
+  total_verified: number
 }
 
 export interface ApiResponse<T> {
