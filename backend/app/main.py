@@ -35,13 +35,17 @@ allowed_origins = os.getenv(
     "http://localhost:5173,http://localhost:5174,http://localhost:80"
 ).split(",") + [
     "https://vision-pulse-ag.vercel.app",
+    "https://vision-pulse-git-main-ansh-gopinaths-projects.vercel.app",
 ]
+
+# Allow all Vercel preview deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
 )
 
 # Routers
