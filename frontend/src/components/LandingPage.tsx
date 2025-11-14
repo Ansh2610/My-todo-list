@@ -1,4 +1,4 @@
-import { Upload as UploadIcon, Zap, Target, BarChart3 } from 'lucide-react'
+import { Zap, Target, BarChart3 } from 'lucide-react'
 import Upload from './Upload'
 
 interface Props {
