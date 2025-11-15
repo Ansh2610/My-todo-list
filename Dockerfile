@@ -22,8 +22,8 @@ COPY backend/ .
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port 7860 (Hugging Face default)
-EXPOSE 7860
+# Expose port 8080 (Fly.io default)
+EXPOSE 8080
 
 # Start the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
