@@ -38,14 +38,14 @@ allowed_origins = os.getenv(
     "https://vision-pulse-git-main-ansh-gopinaths-projects.vercel.app",
 ]
 
-# Allow all Vercel preview deployments
+# Allow all Vercel preview deployments and Railway deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.(vercel\.app|railway\.app)",
 )
 
 # Routers
