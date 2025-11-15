@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.ts'
 import { Box, Metrics } from '../types.ts'
 import { Info } from 'lucide-react'
+import LoadingSpinner from './LoadingSpinner'
 
 interface Props {
   onComplete: (sessionId: string, imageSrc: string, boxes: Box[], metrics: Metrics, imageId: string, filename?: string) => void
@@ -15,6 +16,8 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
+  const [loadingMessage, setLoadingMessage] = useState('')
+  const [loadingSubmessage, setLoadingSubmessage] = useState('')
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -45,17 +48,25 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
 
         // Upload file with session_id (creates session on first upload, reuses for subsequent)
         if (i === 0 && !sessionId) {
+          setLoadingMessage('Uploading image...')
+          setLoadingSubmessage(`${currentFile.name} (${(currentFile.size / 1024).toFixed(1)} KB)`)
           const uploadRes = await api.upload(currentFile)
           sessionId = uploadRes.session_id
         } else {
+          setLoadingMessage(`Uploading image ${i + 1} of ${filesToProcess.length}...`)
+          setLoadingSubmessage(`${currentFile.name}`)
           // For subsequent images, pass the existing session_id
           await api.upload(currentFile, sessionId!)
         }
 
         // run inference with the SAME session_id for all images
+        setLoadingMessage('Running AI detection...')
+        setLoadingSubmessage('YOLOv8 is analyzing your image')
         const inferRes = await api.infer(sessionId!)
 
         // load image for preview
+        setLoadingMessage('Loading results...')
+        setLoadingSubmessage('Almost done!')
         const reader = new FileReader()
         await new Promise<void>((resolve) => {
           reader.onload = () => {
@@ -79,11 +90,22 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
     } finally {
       setLoading(false)
       setUploadProgress(null)
+      setLoadingMessage('')
+      setLoadingSubmessage('')
     }
   }
 
   return (
-    <div className={compact ? "" : "max-w-md mx-auto bg-white p-8 rounded-lg shadow"}>
+    <>
+      {loading && (
+        <LoadingSpinner 
+          message={loadingMessage}
+          submessage={loadingSubmessage}
+          progress={uploadProgress ? (uploadProgress.current / uploadProgress.total) * 100 : undefined}
+        />
+      )}
+      
+      <div className={compact ? "" : "max-w-md mx-auto bg-white p-8 rounded-lg shadow"}>
       {!compact && (
         <>
           <h2 className="text-2xl font-bold mb-4">
@@ -167,5 +189,6 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
         </button>
       </form>
     </div>
+    </>
   )
 }

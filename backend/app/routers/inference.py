@@ -31,6 +31,13 @@ def get_model():
     global model
     if model is None:
         model = YOLO("yolov8n.pt")
+        # Enable half precision for faster inference (2x speedup on compatible hardware)
+        try:
+            model.to('cuda')  # Try GPU first
+            model.half()  # Use FP16 for faster inference
+        except:
+            # Fallback to CPU if CUDA not available
+            pass
         # Warm up the model with a dummy prediction to ensure consistent performance
         import numpy as np
         dummy_img = np.zeros((640, 640, 3), dtype=np.uint8)
