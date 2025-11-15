@@ -63,8 +63,12 @@ export const api = {
     return res.json()
   },
 
-  infer: async (sessionId: string) => {
-    const res = await makeAuthenticatedRequest(`${API_URL}/api/infer/${sessionId}`, {
+  infer: async (sessionId: string, imageId?: string) => {
+    const url = imageId
+      ? `${API_URL}/api/infer/${sessionId}?image_id=${imageId}`
+      : `${API_URL}/api/infer/${sessionId}`
+    
+    const res = await makeAuthenticatedRequest(url, {
       method: 'POST',
     })
 

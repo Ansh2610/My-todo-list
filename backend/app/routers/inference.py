@@ -38,6 +38,11 @@ def get_model():
         except:
             # Fallback to CPU if CUDA not available
             pass
+        # Set deterministic behavior for consistent results
+        import torch
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(42)
         # Warm up the model with a dummy prediction to ensure consistent performance
         import numpy as np
         dummy_img = np.zeros((640, 640, 3), dtype=np.uint8)
@@ -46,7 +51,7 @@ def get_model():
 
 @router.post("/infer/{session_id}")
 @limiter.limit(INFERENCE_RATE_LIMIT)
-async def run_inference(request: Request, session_id: str):
+async def run_inference(request: Request, session_id: str, image_id: str = None):
     """
     Run YOLO on uploaded image.
     Returns boxes + metrics (FPS, avg conf, false pos rate).
@@ -60,13 +65,19 @@ async def run_inference(request: Request, session_id: str):
     Security: Rate limited + timeout protection.
     """
     
-    # Find all files for this session
-    files = list(UPLOAD_DIR.glob(f"{session_id}_*.*"))
-    if not files:
-        raise HTTPException(404, "Session not found")
-    
-    # Get the most recently uploaded file (highest timestamp)
-    filepath = max(files, key=lambda f: f.stat().st_mtime)
+    # Find the specific image file
+    if image_id:
+        # Use the specific image_id provided
+        files = list(UPLOAD_DIR.glob(f"{image_id}.*"))
+        if not files:
+            raise HTTPException(404, f"Image {image_id} not found")
+        filepath = files[0]
+    else:
+        # Fallback: Find all files for this session and get most recent
+        files = list(UPLOAD_DIR.glob(f"{session_id}_*.*"))
+        if not files:
+            raise HTTPException(404, "Session not found")
+        filepath = max(files, key=lambda f: f.stat().st_mtime)
     
     # inference with timeout protection
     start = time.perf_counter()
@@ -132,7 +143,10 @@ async def run_inference(request: Request, session_id: str):
     
     # Save validation data - append to session's image list
     validation_file = VALIDATION_DIR / f"{session_id}.json"
-    image_id = f"{session_id}_{int(time.time() * 1000)}"  # Unique image ID
+    
+    # Use the image_id from the file if not provided
+    if not image_id:
+        image_id = filepath.stem  # Get filename without extension
     
     # Assign unique box_ids
     for idx, gt_box in enumerate(gt_boxes):

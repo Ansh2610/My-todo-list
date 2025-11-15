@@ -63,17 +63,20 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
         setLoadingMessage(`Uploading image ${i + 1} of ${filesToProcess.length}...`)
         setLoadingSubmessage(`${currentFile.name} (${(currentFile.size / 1024).toFixed(1)} KB)`)
         
+        let uploadRes
         if (i === 0 && !sessionId) {
-          const uploadRes = await api.upload(currentFile)
+          uploadRes = await api.upload(currentFile)
           sessionId = uploadRes.session_id
         } else {
-          await api.upload(currentFile, sessionId!)
+          uploadRes = await api.upload(currentFile, sessionId!)
         }
+        
+        const imageId = uploadRes.image_id
 
-        // Step 2: Run AI detection
+        // Step 2: Run AI detection on the SPECIFIC image
         setLoadingMessage(`Detecting objects ${i + 1} of ${filesToProcess.length}...`)
         setLoadingSubmessage(`YOLOv8 is analyzing ${currentFile.name}`)
-        const inferRes = await api.infer(sessionId!)
+        const inferRes = await api.infer(sessionId!, imageId)
 
         // Step 3: Load image data
         setLoadingMessage(`Processing results ${i + 1} of ${filesToProcess.length}...`)

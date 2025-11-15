@@ -56,7 +56,8 @@ async def upload_image(request: Request, file: UploadFile, session_id: str = Non
     # Save with unique filename: session_id + timestamp
     ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
     timestamp = int(time.time() * 1000)
-    filepath = UPLOAD_DIR / f"{session_id}_{timestamp}.{ext}"
+    image_id = f"{session_id}_{timestamp}"
+    filepath = UPLOAD_DIR / f"{image_id}.{ext}"
     
     with open(filepath, "wb") as f:
         f.write(contents)
@@ -66,6 +67,7 @@ async def upload_image(request: Request, file: UploadFile, session_id: str = Non
     
     return {
         "session_id": session_id,
+        "image_id": image_id,  # Return the unique image ID
         "filename": file.filename,
         "size": len(contents),
         "mime": mime,
