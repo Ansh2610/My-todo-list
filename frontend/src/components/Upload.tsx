@@ -39,47 +39,74 @@ export default function Upload({ onComplete, existingSessionId, compact = false 
       const filesToProcess = files.length > 0 ? files : [file!]
       setUploadProgress({ current: 0, total: filesToProcess.length })
 
+      // Store all results before calling onComplete
+      const results: Array<{
+        imageSrc: string
+        boxes: Box[]
+        metrics: Metrics
+        imageId: string
+        filename: string
+      }> = []
+
       // Use existing session or create new one with first upload
       let sessionId = existingSessionId
       
+      // Process ALL images first
       for (let i = 0; i < filesToProcess.length; i++) {
         const currentFile = filesToProcess[i]
+        const progress = ((i + 1) / filesToProcess.length) * 100
+        
+        // Update progress
         setUploadProgress({ current: i + 1, total: filesToProcess.length })
 
-        // Upload file with session_id (creates session on first upload, reuses for subsequent)
+        // Step 1: Upload
+        setLoadingMessage(`Uploading image ${i + 1} of ${filesToProcess.length}...`)
+        setLoadingSubmessage(`${currentFile.name} (${(currentFile.size / 1024).toFixed(1)} KB)`)
+        
         if (i === 0 && !sessionId) {
-          setLoadingMessage('Uploading image...')
-          setLoadingSubmessage(`${currentFile.name} (${(currentFile.size / 1024).toFixed(1)} KB)`)
           const uploadRes = await api.upload(currentFile)
           sessionId = uploadRes.session_id
         } else {
-          setLoadingMessage(`Uploading image ${i + 1} of ${filesToProcess.length}...`)
-          setLoadingSubmessage(`${currentFile.name}`)
-          // For subsequent images, pass the existing session_id
           await api.upload(currentFile, sessionId!)
         }
 
-        // run inference with the SAME session_id for all images
-        setLoadingMessage('Running AI detection...')
-        setLoadingSubmessage('YOLOv8 is analyzing your image')
+        // Step 2: Run AI detection
+        setLoadingMessage(`Detecting objects ${i + 1} of ${filesToProcess.length}...`)
+        setLoadingSubmessage(`YOLOv8 is analyzing ${currentFile.name}`)
         const inferRes = await api.infer(sessionId!)
 
-        // load image for preview
-        setLoadingMessage('Loading results...')
-        setLoadingSubmessage('Almost done!')
-        const reader = new FileReader()
-        await new Promise<void>((resolve) => {
-          reader.onload = () => {
-            onComplete(sessionId!, reader.result as string, inferRes.boxes, inferRes.metrics, inferRes.image_id, currentFile.name)
-            resolve()
-          }
+        // Step 3: Load image data
+        setLoadingMessage(`Processing results ${i + 1} of ${filesToProcess.length}...`)
+        setLoadingSubmessage(`Preparing ${currentFile.name} for editor`)
+        const imageSrc = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
           reader.readAsDataURL(currentFile)
         })
 
-        // Small delay between uploads to prevent overwhelming the server
-        if (i < filesToProcess.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
+        // Store result (don't call onComplete yet!)
+        results.push({
+          imageSrc,
+          boxes: inferRes.boxes,
+          metrics: inferRes.metrics,
+          imageId: inferRes.image_id,
+          filename: currentFile.name
+        })
+      }
+
+      // ALL images processed - now call onComplete for each one
+      setLoadingMessage('Loading editor...')
+      setLoadingSubmessage(`All ${results.length} images ready!`)
+      
+      for (const result of results) {
+        onComplete(
+          sessionId!,
+          result.imageSrc,
+          result.boxes,
+          result.metrics,
+          result.imageId,
+          result.filename
+        )
       }
 
       // Clear files after successful upload
